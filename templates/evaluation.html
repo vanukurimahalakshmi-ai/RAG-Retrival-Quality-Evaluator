@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluation Table - RAG Evaluator{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Evaluation Results</h2>
+    <p class="text-secondary small mb-0">Detailed question-by-question metrics across configured cut-off rank K.</p>
+  </div>
+</div>
+
+<!-- Controls Bar -->
+<div class="card-dark mb-4">
+  <div class="row g-3 align-items-center">
+    <!-- Search -->
+    <div class="col-md-3">
+      <div class="input-group">
+        <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-search"></i></span>
+        <input type="text" id="searchInput" class="form-input-dark form-control" placeholder="Search question or chunk ID...">
+      </div>
+    </div>
+
+    <!-- Dataset Filter -->
+    <div class="col-md-2">
+      <select id="datasetFilterSel" class="form-select-dark w-100">
+        <option value="">All Datasets</option>
+      </select>
+    </div>
+
+    <!-- Hit/Miss Filter -->
+    <div class="col-md-2">
+      <select id="hitFilterSel" class="form-select-dark w-100">
+        <option value="">All Statuses (Hit & Miss)</option>
+        <option value="true">Hits Only 🟢</option>
+        <option value="false">Misses Only 🔴</option>
+      </select>
+    </div>
+
+    <!-- Sort Selector -->
+    <div class="col-md-3">
+      <select id="sortSel" class="form-select-dark w-100">
+        <option value="-id">Sort: Default (Newest First)</option>
+        <option value="recall_desc">Sort: Recall (High to Low)</option>
+        <option value="recall_asc">Sort: Recall (Low to High - Failures)</option>
+        <option value="precision_desc">Sort: Precision (High to Low)</option>
+        <option value="mrr_desc">Sort: MRR (High to Low)</option>
+      </select>
+    </div>
+
+    <!-- Reset Filters -->
+    <div class="col-md-2 text-end">
+      <button id="btnResetFilters" class="btn-secondary-custom w-100">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Results Table -->
+<div class="card-dark">
+  <div class="table-responsive">
+    <table class="table-dark-custom">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th style="min-width: 250px;">Question</th>
+          <th>Expected Chunks</th>
+          <th>Retrieved Chunks (@K)</th>
+          <th>Hit/Miss</th>
+          <th>Recall@<span class="k-label">5</span></th>
+          <th>Precision@<span class="k-label">5</span></th>
+          <th>Recip. Rank</th>
+          <th>1st Relevant Rank</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="evaluationTableBody">
+        <tr>
+          <td colspan="10" class="text-center py-4 text-muted">Loading evaluation results...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="d-flex align-items-center justify-content-between mt-4 pt-3 border-top border-secondary">
+    <div class="text-secondary small" id="paginationInfo">Showing 0 of 0 results</div>
+    <div class="d-flex align-items-center gap-2">
+      <button id="btnPrevPage" class="btn-secondary-custom btn-sm" disabled><i class="bi bi-chevron-left"></i> Previous</button>
+      <span class="text-white small fw-bold px-2" id="pageIndicator">Page 1 of 1</span>
+      <button id="btnNextPage" class="btn-secondary-custom btn-sm" disabled>Next <i class="bi bi-chevron-right"></i></button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/evaluation.js"></script>
+{% endblock %}

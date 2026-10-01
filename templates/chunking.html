@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Chunking Analysis - RAG Evaluator{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Chunking Strategy & Parameter Analysis</h2>
+    <p class="text-secondary small mb-0">Record, inspect, and evaluate the impact of chunk sizes, overlaps, and embedding models on retrieval precision & recall.</p>
+  </div>
+  <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#newConfigModal">
+    <i class="bi bi-plus-lg"></i> Register New Retriever Config
+  </button>
+</div>
+
+<!-- Clarification Alert Banner -->
+<div class="card-dark border-info mb-4" style="border-left: 4px solid var(--accent-cyan);">
+  <div class="d-flex align-items-start gap-3">
+    <i class="bi bi-info-circle-fill text-cyan fs-4 mt-1"></i>
+    <div>
+      <h6 class="fw-bold text-white mb-1">Ground Truth Measurement Notice</h6>
+      <p class="text-secondary small mb-0">
+        This platform measures real evaluation metrics calculated from your uploaded retrieved chunk logs. 
+        Configurations listed below represent the hyperparameter metadata (chunk size, overlap, embedding model) used to produce those retrieval results.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: New Config -->
+<div class="modal fade" id="newConfigModal" tabindex="-1" aria-labelledby="newConfigModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content card-dark text-white border-secondary">
+      <div class="modal-header border-bottom border-secondary">
+        <h5 class="modal-title fw-bold" id="newConfigModalLabel"><i class="bi bi-sliders text-purple me-2"></i> Register Retriever Configuration</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="newConfigForm">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Retriever Name <span class="text-danger">*</span></label>
+            <input type="text" id="cfgName" class="form-input-dark w-100" placeholder="e.g., Dense BGE-Large (500 tokens)" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Embedding Model <span class="text-danger">*</span></label>
+            <input type="text" id="cfgModel" class="form-input-dark w-100" placeholder="e.g., text-embedding-3-small, BAAI/bge-large-en" required>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Chunk Size (Tokens)</label>
+              <input type="number" id="cfgSize" class="form-input-dark w-100" value="500" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Chunk Overlap</label>
+              <input type="number" id="cfgOverlap" class="form-input-dark w-100" value="50" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Default Top K</label>
+            <input type="number" id="cfgTopK" class="form-input-dark w-100" value="5" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea id="cfgDesc" class="form-input-dark w-100" rows="2" placeholder="Optional notes on vector DB, index type (HNSW/IVF), or tokenizer..."></textarea>
+          </div>
+          <div class="modal-footer border-top border-secondary px-0 pb-0 mt-3">
+            <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn-primary-custom"><i class="bi bi-save"></i> Save Configuration</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Configurations Table -->
+<div class="card-dark">
+  <div class="card-header-flex">
+    <div class="card-title"><i class="bi bi-diagram-3-fill text-primary"></i> Registered Configurations & Associated Evaluation Performance</div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table-dark-custom">
+      <thead>
+        <tr>
+          <th>Configuration Name</th>
+          <th>Embedding Model</th>
+          <th>Chunk Size</th>
+          <th>Chunk Overlap</th>
+          <th>Recall@<span class="k-label">5</span></th>
+          <th>Precision@<span class="k-label">5</span></th>
+          <th>MRR</th>
+          <th>Hit Rate</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody id="chunkingTableBody">
+        <tr>
+          <td colspan="9" class="text-center py-4 text-muted">Loading retriever configurations...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/chunking.js"></script>
+{% endblock %}

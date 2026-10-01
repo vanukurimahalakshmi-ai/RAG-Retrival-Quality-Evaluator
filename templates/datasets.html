@@ -1,0 +1,628 @@
+{% extends "base.html" %}
+
+{% block title %}Dataset Management - RAG Evaluator{% endblock %}
+
+{% block extra_head %}
+<style>
+  .pdf-dropzone {
+    border: 2px dashed rgba(99, 102, 241, 0.5);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    background: rgba(99, 102, 241, 0.04);
+    transition: all 0.25s ease;
+    cursor: pointer;
+    position: relative;
+  }
+  .pdf-dropzone.drag-over {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.12);
+    transform: scale(1.01);
+  }
+  .pdf-dropzone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .pdf-dropzone .dz-icon { font-size: 2.8rem; color: var(--accent-primary); margin-bottom: 0.75rem; }
+  .pdf-dropzone .dz-label { color: #c4c9d4; font-size: 0.95rem; }
+  .pdf-dropzone .dz-filename { font-weight: 600; color: #7c83fd; font-size: 0.9rem; margin-top: 0.4rem; }
+  .pdf-result-card {
+    background: rgba(16, 185, 129, 0.07);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .pdf-result-card .stat-val { font-size: 1.5rem; font-weight: 700; color: #34d399; }
+  .pdf-result-card .stat-lbl { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+  .chunk-param-row { display: flex; gap: 1.5rem; }
+  .chunk-param-row > div { flex: 1; }
+  input[type=range] { accent-color: var(--accent-primary); width: 100%; }
+  .range-display { font-weight: 600; color: #a5b4fc; font-size: 0.88rem; }
+  .nav-tabs .nav-link.active { background: rgba(99,102,241,0.18) !important; border-bottom-color: var(--accent-primary) !important; color: #c7d2fe !important; }
+  .nav-tabs .nav-link:hover:not(.active) { background: rgba(255,255,255,0.04) !important; }
+  .upload-btn-row { display: flex; gap: 0.75rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Dataset Management</h2>
+    <p class="text-secondary small mb-0">Upload benchmark evaluation ground truth datasets (JSON / CSV / PDF) or load standard demo datasets.</p>
+  </div>
+  <div class="upload-btn-row">
+    <button class="btn-secondary-custom" data-bs-toggle="modal" data-bs-target="#uploadDatasetModal">
+      <i class="bi bi-file-earmark-code"></i> Upload JSON / CSV
+    </button>
+    <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#uploadPdfModal">
+      <i class="bi bi-file-earmark-pdf"></i> Upload PDF
+    </button>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: JSON / CSV Upload (existing)
+========================================== -->
+<div class="modal fade" id="uploadDatasetModal" tabindex="-1" aria-labelledby="uploadDatasetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content card-dark text-white border-secondary">
+      <div class="modal-header border-bottom border-secondary">
+        <h5 class="modal-title fw-bold" id="uploadDatasetModalLabel"><i class="bi bi-file-earmark-arrow-up text-primary me-2"></i> Upload Evaluation Dataset</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="uploadDatasetForm">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Dataset Name <span class="text-danger">*</span></label>
+            <input type="text" id="datasetNameInput" class="form-input-dark w-100" placeholder="e.g., Enterprise KB Benchmark Q3" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea id="datasetDescInput" class="form-input-dark w-100" rows="2" placeholder="Optional notes about document domain or retrieval versioning..."></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Assign Retriever Configuration</label>
+            <select id="retrieverSelect" class="form-select-dark w-100">
+              <option value="">Default / Unspecified Retriever</option>
+            </select>
+          </div>
+
+          <!-- Tab options: File Upload vs Raw JSON -->
+          <ul class="nav nav-tabs border-secondary mb-3" id="uploadTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active bg-transparent text-white border-secondary" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-tab-pane" type="button" role="tab">File Upload (.json / .csv)</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link bg-transparent text-white border-secondary" id="json-tab" data-bs-toggle="tab" data-bs-target="#json-tab-pane" type="button" role="tab">Raw JSON Input</button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="uploadTabContent">
+            <!-- File tab -->
+            <div class="tab-pane fade show active" id="file-tab-pane" role="tabpanel">
+              <div class="mb-3">
+                <input class="form-control form-input-dark" type="file" id="datasetFileInput" accept=".json,.csv">
+                <div class="form-text text-muted small mt-2">
+                  Accepts <code>.json</code> or <code>.csv</code> files.<br>
+                  JSON format: <code>[{"question": "...", "expected_chunks": ["c1"], "retrieved_chunks": ["c1", "c2"]}]</code><br>
+                  CSV columns: <code>question, expected_chunks, retrieved_chunks</code>
+                </div>
+              </div>
+            </div>
+
+            <!-- Raw JSON tab -->
+            <div class="tab-pane fade" id="json-tab-pane" role="tabpanel">
+              <div class="mb-3">
+                <textarea id="rawJsonInput" class="form-input-dark w-100 font-monospace" rows="8" placeholder='[
+  {
+    "question": "What is the refund policy?",
+    "expected_chunks": ["chunk_12", "chunk_27"],
+    "retrieved_chunks": ["chunk_41", "chunk_12", "chunk_27"]
+  }
+]'></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error Feedback Container -->
+          <div id="uploadErrorAlert" class="alert alert-danger d-none mt-3" role="alert"></div>
+
+          <div class="modal-footer border-top border-secondary px-0 pb-0 mt-4">
+            <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" id="btnSubmitUpload" class="btn-primary-custom">
+              <i class="bi bi-check-lg"></i> Submit &amp; Run Evaluation
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: PDF Upload (new)
+========================================== -->
+<div class="modal fade" id="uploadPdfModal" tabindex="-1" aria-labelledby="uploadPdfModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content card-dark text-white border-secondary">
+      <div class="modal-header border-bottom border-secondary">
+        <h5 class="modal-title fw-bold" id="uploadPdfModalLabel">
+          <i class="bi bi-file-earmark-pdf text-danger me-2"></i> Upload PDF &amp; Auto-Generate Evaluation
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="uploadPdfForm" enctype="multipart/form-data">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Dataset Name</label>
+            <input type="text" id="pdfDatasetName" class="form-input-dark w-100" placeholder="Leave blank to use filename">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea id="pdfDatasetDesc" class="form-input-dark w-100" rows="2" placeholder="Optional notes..."></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Assign Retriever Configuration</label>
+            <select id="pdfRetrieverSelect" class="form-select-dark w-100">
+              <option value="">Default / Unspecified Retriever</option>
+            </select>
+          </div>
+
+          <!-- Chunking Parameters -->
+          <div class="chunk-param-row mb-3">
+            <div>
+              <label class="form-label fw-semibold">Chunk Size <span class="range-display">(words: <span id="chunkSizeVal">150</span>)</span></label>
+              <input type="range" id="pdfChunkSize" min="50" max="500" step="25" value="150"
+                     oninput="document.getElementById('chunkSizeVal').textContent=this.value">
+              <div class="form-text text-muted small">Words per chunk (larger = more context per chunk)</div>
+            </div>
+            <div>
+              <label class="form-label fw-semibold">Overlap <span class="range-display">(words: <span id="overlapVal">30</span>)</span></label>
+              <input type="range" id="pdfOverlap" min="0" max="100" step="10" value="30"
+                     oninput="document.getElementById('overlapVal').textContent=this.value">
+              <div class="form-text text-muted small">Overlap between consecutive chunks</div>
+            </div>
+          </div>
+
+          <!-- Drop Zone -->
+          <div class="pdf-dropzone mb-3" id="pdfDropzone">
+            <input type="file" id="pdfFileInput" accept=".pdf">
+            <div class="dz-icon"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+            <div class="dz-label">Drag &amp; drop your <strong>PDF</strong> here, or click to browse</div>
+            <div class="dz-filename d-none" id="pdfFilename"></div>
+          </div>
+          <div class="form-text text-muted small mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            The PDF text will be extracted, chunked with a sliding window, and realistic evaluation Q&amp;A pairs will be auto-generated. Supports text-based PDFs up to 50 MB.
+          </div>
+
+          <!-- Error / Progress -->
+          <div id="pdfUploadError" class="alert alert-danger d-none" role="alert"></div>
+          <div id="pdfUploadProgress" class="d-none">
+            <div class="d-flex align-items-center gap-2 text-secondary">
+              <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+              <span id="pdfProgressText">Processing PDF…</span>
+            </div>
+            <div class="progress mt-2" style="height:4px; background:rgba(255,255,255,0.08);">
+              <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width:100%"></div>
+            </div>
+          </div>
+
+          <!-- Success Result Panel -->
+          <div id="pdfUploadResult" class="pdf-result-card d-none mt-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                <span class="fw-semibold text-success">PDF processed successfully!</span>
+              </div>
+              <!-- Quality Badge -->
+              <span id="qualityBadge" class="badge fs-6 px-3 py-2">—</span>
+            </div>
+            <div class="row g-3 text-center mb-3">
+              <div class="col-3">
+                <div class="stat-val" id="resultPages">—</div>
+                <div class="stat-lbl">Pages</div>
+              </div>
+              <div class="col-3">
+                <div class="stat-val" id="resultChunks">—</div>
+                <div class="stat-lbl">Chunks</div>
+              </div>
+              <div class="col-3">
+                <div class="stat-val" id="resultQuestions">—</div>
+                <div class="stat-lbl">Eval Q&amp;A</div>
+              </div>
+              <div class="col-3">
+                <div class="stat-val" id="resultScore">—</div>
+                <div class="stat-lbl">Quality Score</div>
+              </div>
+            </div>
+            <!-- Quality summary -->
+            <p class="text-secondary small mb-2" id="qualitySummary"></p>
+            <!-- Quality checks list -->
+            <div id="qualityChecks" class="mb-2"></div>
+            <!-- Recommendations -->
+            <div id="qualityRecs" class="d-none">
+              <div class="text-warning small fw-semibold mb-1"><i class="bi bi-lightbulb me-1"></i>Recommendations</div>
+              <ul id="qualityRecsList" class="text-muted small mb-0 ps-3"></ul>
+            </div>
+            <div class="mt-3 text-secondary small" id="resultDatasetName"></div>
+          </div>
+
+          <div class="modal-footer border-top border-secondary px-0 pb-0 mt-4">
+            <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" id="btnSubmitPdf" class="btn-primary-custom">
+              <i class="bi bi-cpu"></i> Process PDF &amp; Evaluate
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Datasets List Table -->
+<div class="card-dark">
+  <div class="card-header-flex">
+    <div class="card-title"><i class="bi bi-collection-play text-primary"></i> Installed Evaluation Datasets</div>
+    <button id="btnLoadDemoSection" class="btn-secondary-custom btn-sm">
+      <i class="bi bi-magic text-warning"></i> Reset / Load Demo Dataset
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table-dark-custom">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Dataset Name</th>
+          <th>Description</th>
+          <th>Questions</th>
+          <th>Type</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="datasetsTableBody">
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">Loading datasets...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: Ask a Question (Q&A)
+========================================== -->
+<div class="modal fade" id="askQuestionModal" tabindex="-1" aria-labelledby="askQuestionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content card-dark text-white border-secondary">
+      <div class="modal-header border-bottom border-secondary">
+        <h5 class="modal-title fw-bold" id="askQuestionModalLabel">
+          <i class="bi bi-chat-dots text-cyan me-2" style="color:#22d3ee"></i>
+          Ask a Question — <span id="askDatasetLabel" class="text-secondary fw-normal">Dataset</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex gap-2 mb-3">
+          <input type="text" id="askQuestionInput" class="form-input-dark flex-grow-1"
+                 placeholder="e.g. What is the main topic of Chapter 2?" maxlength="500">
+          <button id="btnAskQuestion" class="btn-primary-custom" style="white-space:nowrap">
+            <i class="bi bi-search"></i> Ask
+          </button>
+        </div>
+        <div id="askErrorMsg" class="alert alert-danger d-none small" role="alert"></div>
+        <div id="askLoadingIndicator" class="d-none text-center py-3">
+          <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+          <span class="text-secondary">Searching through document chunks…</span>
+        </div>
+
+        <!-- Extractive Answer -->
+        <div id="askAnswerSection" class="d-none mb-4">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-stars" style="color:#f59e0b; font-size:1.1rem"></i>
+            <span class="fw-semibold" style="color:#fbbf24">Best Match Answer</span>
+          </div>
+          <div id="askExtractedAnswer" class="p-3 rounded" style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); color:#e5e7eb; font-size:0.95rem; line-height:1.6"></div>
+        </div>
+
+        <!-- Source chunks -->
+        <div id="askResultsSection" class="d-none">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-semibold text-white"><i class="bi bi-list-ul me-1 text-primary"></i>Source Chunks</span>
+            <span id="askResultMeta" class="text-secondary small"></span>
+          </div>
+          <div id="askResultsList"></div>
+        </div>
+
+        <div id="askEmptyState" class="d-none text-center py-4">
+          <i class="bi bi-search" style="font-size:2rem; color:#4b5563"></i>
+          <p class="text-muted mt-2 mb-0">No relevant content found. Try rephrasing your question.</p>
+        </div>
+      </div>
+      <div class="modal-footer border-top border-secondary">
+        <small class="text-muted">Answers are extracted from the PDF's stored text chunks using TF-IDF keyword search.</small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/datasets.js"></script>
+<script>
+// =============================================
+// PDF Upload Modal Logic
+// =============================================
+(function () {
+  const form        = document.getElementById('uploadPdfForm');
+  const fileInput   = document.getElementById('pdfFileInput');
+  const dropzone    = document.getElementById('pdfDropzone');
+  const filenameEl  = document.getElementById('pdfFilename');
+  const errorEl     = document.getElementById('pdfUploadError');
+  const progressEl  = document.getElementById('pdfUploadProgress');
+  const progressTxt = document.getElementById('pdfProgressText');
+  const resultEl    = document.getElementById('pdfUploadResult');
+  const submitBtn   = document.getElementById('btnSubmitPdf');
+
+  // Load retriever configs into the PDF modal select
+  fetch('/api/retrievers/').then(r => r.json()).then(data => {
+    const sel = document.getElementById('pdfRetrieverSelect');
+    data.forEach(cfg => {
+      const opt = document.createElement('option');
+      opt.value = cfg.id;
+      opt.textContent = `${cfg.name} (${cfg.embedding_model}, chunk=${cfg.chunk_size})`;
+      sel.appendChild(opt);
+    });
+  }).catch(() => {});
+
+  // Drag & drop
+  ['dragenter','dragover'].forEach(evt => {
+    dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  });
+  ['dragleave','drop'].forEach(evt => {
+    dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag-over'); });
+  });
+  dropzone.addEventListener('drop', e => {
+    const files = e.dataTransfer.files;
+    if (files.length) { fileInput.files = files; updateFilename(); }
+  });
+  fileInput.addEventListener('change', updateFilename);
+
+  function updateFilename() {
+    if (fileInput.files && fileInput.files[0]) {
+      const f = fileInput.files[0];
+      filenameEl.textContent = `📄 ${f.name}  (${(f.size / 1024 / 1024).toFixed(2)} MB)`;
+      filenameEl.classList.remove('d-none');
+      if (!document.getElementById('pdfDatasetName').value.trim()) {
+        document.getElementById('pdfDatasetName').value = f.name.replace(/\.pdf$/i, '');
+      }
+    }
+  }
+
+  document.getElementById('uploadPdfModal').addEventListener('hidden.bs.modal', () => {
+    form.reset();
+    filenameEl.classList.add('d-none');
+    filenameEl.textContent = '';
+    errorEl.classList.add('d-none');
+    progressEl.classList.add('d-none');
+    resultEl.classList.add('d-none');
+    submitBtn.disabled = false;
+    document.getElementById('chunkSizeVal').textContent = '150';
+    document.getElementById('overlapVal').textContent = '30';
+  });
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    errorEl.classList.add('d-none');
+    resultEl.classList.add('d-none');
+
+    if (!fileInput.files || !fileInput.files[0]) {
+      errorEl.textContent = 'Please select a PDF file first.';
+      errorEl.classList.remove('d-none');
+      return;
+    }
+    const file = fileInput.files[0];
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      errorEl.textContent = 'Only .pdf files are supported.';
+      errorEl.classList.remove('d-none');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    progressEl.classList.remove('d-none');
+    progressTxt.textContent = `Extracting text from "${file.name}"…`;
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('name', document.getElementById('pdfDatasetName').value.trim());
+    fd.append('description', document.getElementById('pdfDatasetDesc').value.trim());
+    fd.append('chunk_size', document.getElementById('pdfChunkSize').value);
+    fd.append('overlap', document.getElementById('pdfOverlap').value);
+    const retrieverVal = document.getElementById('pdfRetrieverSelect').value;
+    if (retrieverVal) fd.append('retriever_config_id', retrieverVal);
+
+    try {
+      const res = await fetch('/api/datasets/upload-pdf/', { method: 'POST', body: fd });
+      const data = await res.json();
+      progressEl.classList.add('d-none');
+
+      if (!res.ok) {
+        errorEl.textContent = data.error || 'An unexpected error occurred.';
+        errorEl.classList.remove('d-none');
+        submitBtn.disabled = false;
+        return;
+      }
+
+      // ── Populate basic stats ───────────────────────────────────────────
+      document.getElementById('resultPages').textContent     = data.total_pages;
+      document.getElementById('resultChunks').textContent    = data.total_chunks;
+      document.getElementById('resultQuestions').textContent = data.questions_generated;
+      document.getElementById('resultDatasetName').innerHTML =
+        `<i class="bi bi-database text-primary me-1"></i> Dataset <strong>"${data.dataset.name}"</strong> created — ID <code>#${data.dataset.id}</code>`;
+
+      // ── Quality section ────────────────────────────────────────────────
+      const q = data.quality;
+      if (q) {
+        document.getElementById('resultScore').textContent = `${q.score}/100`;
+
+        const badge = document.getElementById('qualityBadge');
+        const colorMap = { success: 'bg-success', primary: 'bg-primary', warning: 'bg-warning text-dark', danger: 'bg-danger' };
+        badge.className = `badge fs-6 px-3 py-2 ${colorMap[q.rating_color] || 'bg-secondary'}`;
+        badge.textContent = q.rating;
+
+        document.getElementById('qualitySummary').textContent = q.summary;
+
+        // Checks list
+        const checksEl = document.getElementById('qualityChecks');
+        checksEl.innerHTML = q.checks.map(c =>
+          `<div class="d-flex align-items-start gap-2 small py-1">
+             <i class="bi ${c.passed ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'} mt-1" style="flex-shrink:0"></i>
+             <span><strong>${c.label}</strong> — <span class="text-secondary">${c.detail}</span></span>
+           </div>`
+        ).join('');
+
+        // Recommendations
+        if (q.recommendations && q.recommendations.length) {
+          const recsEl = document.getElementById('qualityRecs');
+          recsEl.classList.remove('d-none');
+          document.getElementById('qualityRecsList').innerHTML =
+            q.recommendations.map(r => `<li>${r}</li>`).join('');
+        }
+      }
+
+      resultEl.classList.remove('d-none');
+
+      if (typeof loadDatasets === 'function') loadDatasets();
+
+      // Store dataset ID for Q&A — no auto-close, let user read the quality report
+      submitBtn.textContent = '✓ Done';
+
+    } catch (err) {
+      progressEl.classList.add('d-none');
+      errorEl.textContent = 'Network error — could not reach the server.';
+      errorEl.classList.remove('d-none');
+      submitBtn.disabled = false;
+    }
+  });
+})();
+
+// =============================================
+// Ask-a-Question (Q&A) Modal Logic
+// =============================================
+(function () {
+  let activeDatasetId = null;
+
+  // Called from datasets table "Ask" button
+  window.openAskModal = function(datasetId, datasetName) {
+    activeDatasetId = datasetId;
+    document.getElementById('askDatasetLabel').textContent = datasetName;
+    document.getElementById('askQuestionInput').value = '';
+    document.getElementById('askErrorMsg').classList.add('d-none');
+    document.getElementById('askAnswerSection').classList.add('d-none');
+    document.getElementById('askResultsSection').classList.add('d-none');
+    document.getElementById('askEmptyState').classList.add('d-none');
+    const modal = new bootstrap.Modal(document.getElementById('askQuestionModal'));
+    modal.show();
+    setTimeout(() => document.getElementById('askQuestionInput').focus(), 400);
+  };
+
+  document.getElementById('btnAskQuestion').addEventListener('click', askQuestion);
+  document.getElementById('askQuestionInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') askQuestion();
+  });
+
+  async function askQuestion() {
+    const query = document.getElementById('askQuestionInput').value.trim();
+    const errEl  = document.getElementById('askErrorMsg');
+    errEl.classList.add('d-none');
+
+    if (!query) {
+      errEl.textContent = 'Please type a question first.';
+      errEl.classList.remove('d-none');
+      return;
+    }
+    if (!activeDatasetId) {
+      errEl.textContent = 'No dataset selected.';
+      errEl.classList.remove('d-none');
+      return;
+    }
+
+    const loadEl = document.getElementById('askLoadingIndicator');
+    const ansEl  = document.getElementById('askAnswerSection');
+    const resEl  = document.getElementById('askResultsSection');
+    const emptyEl = document.getElementById('askEmptyState');
+
+    [ansEl, resEl, emptyEl].forEach(el => el.classList.add('d-none'));
+    loadEl.classList.remove('d-none');
+
+    try {
+      const res = await fetch(`/api/datasets/${activeDatasetId}/ask/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({ question: query, top_k: 5 })
+      });
+      const data = await res.json();
+      loadEl.classList.add('d-none');
+
+      if (!res.ok) {
+        errEl.textContent = data.error || 'Search failed.';
+        errEl.classList.remove('d-none');
+        return;
+      }
+
+      if (!data.results || data.results.length === 0) {
+        emptyEl.classList.remove('d-none');
+        return;
+      }
+
+      // Answer
+      document.getElementById('askExtractedAnswer').textContent = data.answer || '—';
+      ansEl.classList.remove('d-none');
+
+      // Source chunks
+      document.getElementById('askResultMeta').textContent = data.message || '';
+      const listEl = document.getElementById('askResultsList');
+      listEl.innerHTML = data.results.map(r => `
+        <div class="mb-3 p-3 rounded" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07)">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-semibold text-white small">#${r.rank} &nbsp;<code>${r.chunk_id}</code> &nbsp;<span class="text-muted">Page ${r.page}</span></span>
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:80px; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden">
+                <div style="width:${r.relevance_pct}%; height:100%; background:var(--accent-primary); border-radius:3px"></div>
+              </div>
+              <span class="text-muted" style="font-size:0.72rem">${r.relevance_pct}%</span>
+            </div>
+          </div>
+          <p class="text-secondary small mb-0" style="line-height:1.6">${escHtml(r.snippet)}</p>
+        </div>
+      `).join('');
+      resEl.classList.remove('d-none');
+
+    } catch (err) {
+      loadEl.classList.add('d-none');
+      errEl.textContent = 'Network error — could not reach the server.';
+      errEl.classList.remove('d-none');
+    }
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function getCookie(name) {
+    const val = `; ${document.cookie}`;
+    const parts = val.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+  }
+})();
+</script>
+{% endblock %}

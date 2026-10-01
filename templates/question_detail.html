@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Question Detail - RAG Evaluator{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <a href="/evaluation/" class="btn-secondary-custom btn-sm mb-2"><i class="bi bi-arrow-left"></i> Back to Evaluation List</a>
+    <h2 class="fw-bold mb-0">Question Inspection</h2>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="text-secondary small fw-bold">Dataset:</span>
+    <span class="badge bg-secondary fs-6" id="qDatasetName">Loading...</span>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left Side: Question Text, Expected Chunks & Ranked Chunk Visualizer -->
+  <div class="col-lg-8">
+    <!-- Question Header Card -->
+    <div class="card-dark mb-4">
+      <div class="card-header-flex">
+        <div class="card-title text-primary"><i class="bi bi-question-circle"></i> Evaluated Question</div>
+        <span class="badge-tag" id="qIdBadge">#0</span>
+      </div>
+      <p class="fs-5 fw-semibold text-white mb-3" id="qTextDisplay">Loading question...</p>
+      
+      <div class="border-top border-secondary pt-3 mt-3">
+        <label class="text-secondary small fw-bold uppercase me-2">Expected (Relevant) Ground-Truth Chunks:</label>
+        <div class="d-flex flex-wrap gap-2 mt-2" id="expectedChunksList">
+          <span class="text-muted">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ranked Retrieved Chunks Card -->
+    <div class="card-dark">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-layers text-purple"></i> Retrieved Chunks in Ranked Order</div>
+        <div class="small text-muted">🟢 Relevant | 🔴 Irrelevant</div>
+      </div>
+
+      <div id="rankedChunksContainer">
+        <div class="text-center py-4 text-muted">Loading ranked chunks...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Evaluation Metrics Card -->
+  <div class="col-lg-4">
+    <div class="card-dark position-sticky" style="top: 90px;">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-calculator text-warning"></i> Evaluation Summary</div>
+        <span class="badge bg-primary" id="kBadge">K=5</span>
+      </div>
+
+      <div class="text-center py-3 mb-3 border-bottom border-secondary" id="hitBadgeContainer">
+        <span class="badge-hit fs-6 py-2 px-3"><i class="bi bi-check-circle"></i> Successful Hit</span>
+      </div>
+
+      <div class="d-flex flex-column gap-3">
+        <div class="d-flex align-items-center justify-content-between p-2 rounded bg-dark border border-secondary">
+          <span class="text-secondary small fw-semibold">Recall@K</span>
+          <span class="fw-bold fs-5 text-success" id="mRecall">0.00</span>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between p-2 rounded bg-dark border border-secondary">
+          <span class="text-secondary small fw-semibold">Precision@K</span>
+          <span class="fw-bold fs-5 text-info" id="mPrecision">0.00</span>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between p-2 rounded bg-dark border border-secondary">
+          <span class="text-secondary small fw-semibold">Reciprocal Rank</span>
+          <span class="fw-bold fs-5 text-warning" id="mRR">0.00</span>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between p-2 rounded bg-dark border border-secondary">
+          <span class="text-secondary small fw-semibold">First Relevant Rank</span>
+          <span class="fw-bold fs-5 text-white" id="mFirstRank">Rank 1</span>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between p-2 rounded bg-dark border border-secondary">
+          <span class="text-secondary small fw-semibold">Retriever Configuration</span>
+          <span class="text-accent small text-truncate" style="max-width: 150px;" id="mRetrieverName">Default</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const QUESTION_ID = {{ question_id }};
+</script>
+<script src="/static/js/question_detail.js"></script>
+{% endblock %}

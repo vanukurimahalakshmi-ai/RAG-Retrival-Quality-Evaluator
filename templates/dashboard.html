@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - RAG Retrieval Quality Evaluator{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Retrieval Quality Dashboard</h2>
+    <p class="text-secondary small mb-0">Live aggregated metrics and performance insights from evaluation runs.</p>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <select id="datasetFilter" class="form-select-dark" style="min-width: 220px;">
+      <option value="">All Datasets</option>
+    </select>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Hit Rate</div>
+    <div class="stat-value text-success" id="statHitRate">0%</div>
+    <div class="stat-subtext" id="statHitSub">Successful retrieval rate</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Recall@<span class="k-label">5</span></div>
+    <div class="stat-value text-primary" id="statRecall">0.00</div>
+    <div class="stat-subtext">Prop. expected chunks retrieved</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Precision@<span class="k-label">5</span></div>
+    <div class="stat-value text-info" id="statPrecision">0.00</div>
+    <div class="stat-subtext">Prop. retrieved chunks relevant</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">MRR (Mean Recip. Rank)</div>
+    <div class="stat-value text-warning" id="statMRR">0.00</div>
+    <div class="stat-subtext">Average reciprocal rank</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Total Questions</div>
+    <div class="stat-value text-white" id="statTotalQ">0</div>
+    <div class="stat-subtext" id="statPassFail">0 Hits / 0 Misses</div>
+  </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <div class="card-dark h-100">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-pie-chart text-primary"></i> Hit vs Miss Ratio</div>
+      </div>
+      <div class="d-flex justify-content-center align-items-center" style="height: 260px;">
+        <canvas id="hitVsMissChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card-dark h-100">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-graph-up text-purple"></i> Performance Across Cut-off K (1, 3, 5, 10)</div>
+      </div>
+      <div style="height: 260px;">
+        <canvas id="performanceByKChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card-dark">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-bar-chart text-info"></i> Recall Distribution</div>
+      </div>
+      <div style="height: 220px;">
+        <canvas id="recallDistChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card-dark">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-bar-chart text-warning"></i> Precision Distribution</div>
+      </div>
+      <div style="height: 220px;">
+        <canvas id="precisionDistChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lowest Performing Questions -->
+<div class="card-dark">
+  <div class="card-header-flex">
+    <div class="card-title"><i class="bi bi-exclamation-triangle text-danger"></i> Lowest-Performing Questions</div>
+    <a href="/evaluation/" class="btn-secondary-custom btn-sm">View All Questions <i class="bi bi-arrow-right"></i></a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table-dark-custom">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Question</th>
+          <th>Dataset</th>
+          <th>Status</th>
+          <th>Recall</th>
+          <th>Precision</th>
+          <th>1st Relevant Rank</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="lowestQuestionsTable">
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">Loading analytics data...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

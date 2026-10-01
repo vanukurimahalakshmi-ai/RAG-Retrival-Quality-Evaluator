@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Retriever Comparison - RAG Evaluator{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Retriever Configuration Comparison</h2>
+    <p class="text-secondary small mb-0">Compare retrieval models, chunking strategies, and parameter configurations side-by-side objectively.</p>
+  </div>
+</div>
+
+<!-- Selectors Header -->
+<div class="card-dark mb-4">
+  <div class="row g-3 align-items-center">
+    <div class="col-md-5">
+      <label class="form-label text-primary fw-bold"><i class="bi bi-cpu me-1"></i> Retriever A Configuration</label>
+      <select id="configASel" class="form-select-dark w-100">
+        <option value="">Select Retriever A...</option>
+      </select>
+    </div>
+
+    <div class="col-md-2 text-center">
+      <div class="brand-icon mx-auto my-2" style="width: 44px; height: 44px;"><i class="bi bi-arrows-collapse"></i></div>
+      <div class="text-secondary small fw-bold">VS</div>
+    </div>
+
+    <div class="col-md-5">
+      <label class="form-label text-purple fw-bold"><i class="bi bi-cpu-fill me-1"></i> Retriever B Configuration</label>
+      <select id="configBSel" class="form-select-dark w-100">
+        <option value="">Select Retriever B...</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Side-by-Side Comparison Cards -->
+<div class="row g-4 mb-4">
+  <!-- Retriever A Card -->
+  <div class="col-md-6">
+    <div class="card-dark border-primary" style="border-top: 4px solid var(--accent-blue);">
+      <div class="card-header-flex">
+        <div class="card-title text-primary"><i class="bi bi-layer-forward"></i> <span id="nameA">Retriever A</span></div>
+        <span class="badge bg-primary" id="modelBadgeA">Embedding Model</span>
+      </div>
+
+      <div class="bg-dark p-3 rounded mb-4 border border-secondary">
+        <div class="row text-center">
+          <div class="col-4">
+            <div class="text-secondary small">Chunk Size</div>
+            <div class="fw-bold text-white fs-5" id="chunkSizeA">-</div>
+          </div>
+          <div class="col-4">
+            <div class="text-secondary small">Overlap</div>
+            <div class="fw-bold text-white fs-5" id="overlapA">-</div>
+          </div>
+          <div class="col-4">
+            <div class="text-secondary small">Top K</div>
+            <div class="fw-bold text-white fs-5" id="topKA">-</div>
+          </div>
+        </div>
+      </div>
+
+      <h6 class="text-secondary uppercase fw-bold small mb-3">Measured Metrics (@K=<span class="k-label">5</span>)</h6>
+      <div class="d-flex flex-column gap-2">
+        <div class="d-flex justify-content-between p-2 rounded bg-dark">
+          <span class="text-secondary">Recall</span>
+          <span class="fw-bold fs-5 text-success" id="recallA">0.00</span>
+        </div>
+        <div class="d-flex justify-content-between p-2 rounded bg-dark">
+          <span class="text-secondary">Precision</span>
+          <span class="fw-bold fs-5 text-info" id="precisionA">0.00</span>
+        </div>
+        <div class="d-flex justify-content-between p-2 rounded bg-dark">
+          <span class="text-secondary">Hit Rate</span>
+          <span class="fw-bold fs-5 text-white" id="hitRateA">0%</span>
+        </div>
+        <div class="d-flex justify-content-between p-2 rounded bg-dark">
+          <span class="text-secondary">MRR</span>
+          <span class="fw-bold fs-5 text-warning" id="mrrA">0.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retriever B Card -->
+  <div class="col-md-6">
+    <div class="card-dark border-purple" style="border-top: 4px solid var(--accent-purple);">
+      <div class="card-header-flex">
+        <div class="card-title text-purple"><i class="bi bi-layer-forward"></i> <span id="nameB">Retriever B</span></div>
+        <span class="badge bg-purple" id="modelBadgeB">Embedding Model</span>
+      </div>
+
+      <div class="bg-dark p-3 rounded mb-4 border border-secondary">
+        <div class="row text-center">
+          <div class="col-4">
+            <div class="text-secondary small">Chunk Size</div>
+            <div class="fw-bold text-white fs-5" id="chunkSizeB">-</div>
+          </div>
+          <div class="col-4">
+            <div class="text-secondary small">Overlap</div>
+            <div class="fw-bold text-white fs-5" id="overlapB">-</div>
+          </div>
+          <div class="col-4">
+            <div class="text-secondary small">Top K</div>
+            <div class="fw-bold text-white fs-5" id="topKB">-</div>
+          </div>
+        </div>
+      </div>
+
+      <h6 class="text-secondary uppercase fw-bold small mb-3">Measured Metrics (@K=<span class="k-label">5</span>)</h6>
+      <div class="d-flex flex-column gap-2">
+        <div class="d-flex justify-content-between p-2 rounded bg-dark">
+          <span class="text-secondary">Recall</span>
+          <span class="fw-bold fs-5 text-success" id="recallB">0.00</span>
+        </div>
+        <div class="d-flex justify-content-between p-2 rounded bg-dark">
+          <span class="text-secondary">Precision</span>
+          <span class="fw-bold fs-5 text-info" id="precisionB">0.00</span>
+        </div>
+        <div class="d-flex justify-content-between p-2 rounded bg-dark">
+          <span class="text-secondary">Hit Rate</span>
+          <span class="fw-bold fs-5 text-white" id="hitRateB">0%</span>
+        </div>
+        <div class="d-flex justify-content-between p-2 rounded bg-dark">
+          <span class="text-secondary">MRR</span>
+          <span class="fw-bold fs-5 text-warning" id="mrrB">0.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delta Differences Card -->
+<div class="card-dark">
+  <div class="card-header-flex">
+    <div class="card-title"><i class="bi bi-calculator-fill text-warning"></i> Delta Variance (Retriever B minus Retriever A)</div>
+  </div>
+
+  <div class="row text-center g-3">
+    <div class="col-md-3">
+      <div class="p-3 bg-dark rounded border border-secondary">
+        <div class="text-secondary small">Recall Variance</div>
+        <div class="fw-bold fs-4" id="diffRecall">+0.00</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="p-3 bg-dark rounded border border-secondary">
+        <div class="text-secondary small">Precision Variance</div>
+        <div class="fw-bold fs-4" id="diffPrecision">+0.00</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="p-3 bg-dark rounded border border-secondary">
+        <div class="text-secondary small">Hit Rate Delta</div>
+        <div class="fw-bold fs-4" id="diffHitRate">+0.0%</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="p-3 bg-dark rounded border border-secondary">
+        <div class="text-secondary small">MRR Variance</div>
+        <div class="fw-bold fs-4" id="diffMRR">+0.00</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/comparison.js"></script>
+{% endblock %}

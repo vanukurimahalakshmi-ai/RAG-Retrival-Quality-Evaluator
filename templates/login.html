@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — RAG Retrieval Quality Evaluator</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/style.css">
+  
+  <style>
+    .auth-page-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 20%, rgba(59, 130, 246, 0.12), transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08), transparent 40%),
+                  var(--bg-dark);
+      padding: 2rem 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-card {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(59, 130, 246, 0.1);
+      width: 100%;
+      max-width: 440px;
+      padding: 2.5rem 2.25rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .auth-brand-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: #fff;
+      margin: 0 auto 1.25rem;
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+    }
+
+    .auth-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-align: center;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+    }
+
+    .auth-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .form-group-custom {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label-custom {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 1rem;
+      color: var(--text-muted);
+      font-size: 1rem;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+
+    .form-input-auth {
+      width: 100%;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.75rem 2.6rem 0.75rem 2.6rem;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .form-input-auth:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      background-color: #162032;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .form-input-auth:focus + .input-icon,
+    .input-wrapper:focus-within .input-icon {
+      color: var(--accent-blue);
+    }
+
+    .btn-toggle-password {
+      position: absolute;
+      right: 0.75rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      font-size: 1rem;
+      transition: color 0.2s;
+    }
+
+    .btn-toggle-password:hover {
+      color: var(--text-primary);
+    }
+
+    .auth-btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.8rem 1.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+      margin-top: 1.5rem;
+    }
+
+    .auth-btn-submit:hover {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .auth-btn-submit:active {
+      transform: translateY(0);
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.5rem 0;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .auth-divider::before { margin-right: 0.75rem; }
+    .auth-divider::after { margin-left: 0.75rem; }
+
+    .btn-demo-login {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: 10px;
+      padding: 0.65rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-demo-login:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .auth-footer a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .auth-footer a:hover {
+      color: #38bdf8;
+      text-decoration: underline;
+    }
+
+    .custom-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .custom-checkbox input[type="checkbox"] {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--border-highlight);
+      border-radius: 4px;
+      background-color: var(--bg-input);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .custom-checkbox input[type="checkbox"]:checked {
+      background-color: var(--accent-blue);
+      border-color: var(--accent-blue);
+    }
+
+    .custom-checkbox input[type="checkbox"]:checked::after {
+      content: '✓';
+      color: #fff;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .ambient-glow {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    .glow-1 { top: -150px; left: -100px; background: var(--accent-blue); }
+    .glow-2 { bottom: -150px; right: -100px; background: var(--accent-purple); }
+  </style>
+</head>
+<body>
+
+<div class="auth-page-wrapper">
+  <!-- Ambient background lighting -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <div class="auth-card">
+    <!-- Brand Icon & Header -->
+    <div class="auth-brand-icon">
+      <i class="bi bi-cpu"></i>
+    </div>
+    <h1 class="auth-title">Welcome Back</h1>
+    <p class="auth-subtitle">Sign in to your RAG Evaluation Workspace</p>
+
+    <!-- Django Messages (e.g. registration success or logout message) -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} d-flex align-items-center gap-2 py-2 px-3 mb-3 small" role="alert" style="border-radius: 8px;">
+          <i class="bi bi-info-circle-fill"></i>
+          <div>{{ message }}</div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Error Alert -->
+    {% if error %}
+      <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-3 small" role="alert" style="border-radius: 8px;">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div>{{ error }}</div>
+      </div>
+    {% endif %}
+
+    <!-- Login Form -->
+    <form method="POST" action="{% url 'login' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="form-group-custom">
+        <label class="form-label-custom" for="username">Username or Email</label>
+        <div class="input-wrapper">
+          <i class="bi bi-person input-icon"></i>
+          <input type="text" 
+                 id="username" 
+                 name="username" 
+                 class="form-input-auth" 
+                 placeholder="username or user@example.com" 
+                 required 
+                 autofocus>
+        </div>
+      </div>
+
+      <div class="form-group-custom">
+        <label class="form-label-custom" for="password">
+          <span>Password</span>
+        </label>
+        <div class="input-wrapper">
+          <i class="bi bi-lock input-icon"></i>
+          <input type="password" 
+                 id="password" 
+                 name="password" 
+                 class="form-input-auth" 
+                 placeholder="••••••••" 
+                 required>
+          <button type="button" class="btn-toggle-password" id="togglePasswordBtn" title="Show/Hide Password">
+            <i class="bi bi-eye" id="togglePasswordIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <label class="custom-checkbox">
+          <input type="checkbox" name="remember_me" checked>
+          <span>Remember me for 2 weeks</span>
+        </label>
+      </div>
+
+      <button type="submit" class="auth-btn-submit" id="btnLoginSubmit">
+        <i class="bi bi-box-arrow-in-right"></i> Sign In
+      </button>
+    </form>
+
+    <div class="auth-divider">or quick access</div>
+
+    <button type="button" class="btn-demo-login" id="btnQuickDemo">
+      <i class="bi bi-magic text-warning"></i> Quick Demo Login
+    </button>
+
+    <div class="auth-footer">
+      Don't have an account? <a href="{% url 'register' %}">Create account</a>
+      <div class="mt-2">
+        <a href="/" class="text-secondary small" style="text-decoration:none;">
+          <i class="bi bi-arrow-left me-1"></i> Continue as Guest
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Show / Hide Password toggle
+  const toggleBtn = document.getElementById('togglePasswordBtn');
+  const passwordInput = document.getElementById('password');
+  const toggleIcon = document.getElementById('togglePasswordIcon');
+
+  if (toggleBtn && passwordInput && toggleIcon) {
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+      toggleIcon.classList.toggle('bi-eye', !isPassword);
+      toggleIcon.classList.toggle('bi-eye-slash', isPassword);
+    });
+  }
+
+  // Quick Demo Login Helper
+  document.getElementById('btnQuickDemo').addEventListener('click', () => {
+    document.getElementById('username').value = 'demo_user';
+    document.getElementById('password').value = 'ragdemo123';
+    document.getElementById('btnLoginSubmit').click();
+  });
+</script>
+
+</body>
+</html>

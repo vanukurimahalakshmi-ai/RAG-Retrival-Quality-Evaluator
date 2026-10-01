@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - RAG Evaluator{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Deep RAG Analytics</h2>
+    <p class="text-secondary small mb-0">Distribution curves, rank position analysis, and failure diagnostic charts.</p>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <select id="analyticsDatasetSel" class="form-select-dark" style="min-width: 220px;">
+      <option value="">All Datasets</option>
+    </select>
+  </div>
+</div>
+
+<!-- Grid 1: Recall & Precision Distributions -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card-dark">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-bar-chart-steps text-primary"></i> Recall@<span class="k-label">5</span> Distribution</div>
+      </div>
+      <div style="height: 260px;">
+        <canvas id="aRecallChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card-dark">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-bar-chart-steps text-info"></i> Precision@<span class="k-label">5</span> Distribution</div>
+      </div>
+      <div style="height: 260px;">
+        <canvas id="aPrecisionChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Grid 2: MRR & Rank Distribution -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card-dark">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-graph-up-arrow text-warning"></i> MRR (Reciprocal Rank) Distribution</div>
+      </div>
+      <div style="height: 260px;">
+        <canvas id="aMrrChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card-dark">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-diagram-2 text-purple"></i> Relevant Chunk Rank Position Breakdown</div>
+      </div>
+      <div style="height: 260px;">
+        <canvas id="aRankDistChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Grid 3: Hit vs Miss & Performance by K -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <div class="card-dark h-100">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-pie-chart-fill text-success"></i> Hit vs Miss Ratio</div>
+      </div>
+      <div class="d-flex justify-content-center align-items-center" style="height: 240px;">
+        <canvas id="aHitVsMissChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card-dark h-100">
+      <div class="card-header-flex">
+        <div class="card-title"><i class="bi bi-bezier2 text-cyan"></i> Performance Scaling Across Cut-off K</div>
+      </div>
+      <div style="height: 240px;">
+        <canvas id="aPerfByKChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/analytics.js"></script>
+{% endblock %}
